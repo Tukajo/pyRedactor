@@ -1,3 +1,4 @@
+import datetime
 import os
 import traceback
 
@@ -6,24 +7,30 @@ common_excluded_paths = ['venv', '.idea', 'node_modules', 'bower_components', 'd
                          '.git', 'Python']
 common_excluded_files = ['audits.txt', 'substitute.py', 'substitutor.py', 'substitutor.pyc', 'substitutor.pyw',
                          'substitutor.pyo', 'substitutor.exe', 'Redactor.py', '.git', 'repos_list.json',
-                         'repoList.json', 'repoList.txt', 'repos.txt']
+                         'repoList.json', 'repoList.txt', 'repos.txt', '.settings.xml', '.gitignore', '.gitattributes',
+                         'settings.xml']
 
+startTime = int(round(datetime.datetime.now().timestamp()) * 1000)
+auditFileName = f'Substitor_Audit_{startTime}.txt'
 
 def audit(action):
     """
     Audits the actions taken by this script.
     """
-    print(f'{action}')
-    actionAudits.append(action)
+    pretty = f'{action}\n'
+    print(pretty)
+    actionAudits.append(pretty)
 
 
-def writeAuditsToFile(audits):
+def writeAuditsToFile():
     """
     Writes the audits to a file.
     """
-    with open('audits.txt', 'w') as f:
-        for auditItem in audits:
-            f.write(f'{auditItem}\n')
+
+    with open(auditFileName, 'a') as f:
+        f.writelines(actionAudits)
+    actionAudits.clear()
+    f.close()
 
 
 def askForBaseDirectory():
@@ -56,6 +63,7 @@ def getFileName(path):
     """
     return os.path.basename(path)
 
+
 def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclusions):
     """
     Searches and replaces the key words with the substitutes in the files.
@@ -74,8 +82,9 @@ def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclus
                 audit(f'Checking file: {filePath}')
                 fc = getFileContents(filePath)
                 fc = replaceText(fc, keyWordSubstitutions)
-                print("__________________________________")
                 writeFileContent(filePath, fc)
+                writeAuditsToFile()
+
 
 def writeFileContent(path, content):
     """
@@ -85,6 +94,7 @@ def writeFileContent(path, content):
         audit(f'... writing file content {content} to {path}')
         f.write(content)
 
+
 def getFileContents(path):
     """
     Returns the file contents.
@@ -92,6 +102,7 @@ def getFileContents(path):
     with open(path, 'r') as f:
         audit(f'... reading {path}')
         return f.read()
+
 
 def replaceText(text, keyWordSubstitutions):
     """
@@ -101,6 +112,7 @@ def replaceText(text, keyWordSubstitutions):
         audit(f'Replacing {keyword} with {substitute}')
         return text.replace(keyword, substitute)
     return text
+
 
 def checkIfPathContainsExcludedWords(path, excludedWords):
     """
@@ -145,7 +157,7 @@ def askForDirectoryExclusions():
 if __name__ == '__main__':
     try:
         baseDirectory = askForBaseDirectory()
-        if (baseDirectory == '.' or baseDirectory == './'):
+        if baseDirectory == '.' or baseDirectory == './':
             baseDirectory = currentDirectory()
         excludeDirectories = askForDirectoryExclusions()
         excludeDirectories = excludeDirectories + common_excluded_paths
@@ -157,8 +169,9 @@ if __name__ == '__main__':
         audit(f'Substitutes: {substitutes}')
         audit(f'Key Word Substitution Tuple: {keyWordSubstitutions}')
         searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, excludeDirectories)
-        writeAuditsToFile(actionAudits)
+        writeAuditsToFile()
     except Exception as e:
         error = traceback.print_exc(None)
         audit(f'Error: {error}')
-        writeAuditsToFile(actionAudits)
+        writeAuditsToFile()
+        raise e
