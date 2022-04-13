@@ -14,6 +14,8 @@ common_excluded_files = ['audits.txt', 'substitute.py', 'substitutor.py', 'subst
 
 startTime = int(round(datetime.datetime.now().timestamp()) * 1000)
 auditFileName = f'Substitor_Audit_{startTime}.txt'
+
+
 def audit(action):
     """
     Audits the actions taken by this script.
@@ -81,12 +83,18 @@ def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclus
             else:
                 filePath = os.path.join(root, file)
                 audit(f'Checking file: {filePath}')
-                fc = getFileContents(filePath)
-                resp = replaceText(fc, keyWordSubstitutions)
-                fc = resp[0]
-                changeCount = resp[1]
-                if changeCount > 0:
-                    writeFileContent(filePath, fc)
+                # try to read file, skip if not readable
+                try:
+                    fc = getFileContents(filePath)
+                    resp = replaceText(fc, keyWordSubstitutions)
+                    fc = resp[0]
+                    changeCount = resp[1]
+                    if changeCount > 0:
+                        writeFileContent(filePath, fc)
+                except Exception as e:
+                    audit(f'Skipping file, unreadable: {filePath}')
+                    audit(f'Exception: {formatErrorWithTrace(e)}')
+                    continue
                 writeAuditsToFile()
 
 
@@ -116,7 +124,8 @@ def replaceText(text, keyWordSubstitutions):
     global totalReplacementCount
     for (keyword, substitute) in keyWordSubstitutions:
         audit(f'Replacing {keyword} with {substitute}')
-        (newText, qty) = re.subn(keyword, substitute, text)
+        regex = re.compile(r'\b' + keyword + r'\b')
+        (newText, qty) = re.subn(regex, substitute, text)
         count += qty
         text = newText
     audit(f'{count} replacements made')
@@ -162,6 +171,11 @@ def askForDirectoryExclusions():
     directoryExclusions = input("Enter the directory(ies) to exclude: \n")
     return directoryExclusions.split()
 
+def formatErrorWithTrace(e):
+    """
+    Formats the error with the trace.
+    """
+    return f'{e}\n{traceback.format_exc()}'
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -182,7 +196,6 @@ if __name__ == '__main__':
         audit(f'Total replacements made: {totalReplacementCount}')
         writeAuditsToFile()
     except Exception as e:
-        error = traceback.print_exc(None)
-        audit(f'Error: {error}')
+        audit(f'Error: {formatErrorWithTrace(e)}')
         writeAuditsToFile()
         raise e
