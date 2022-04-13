@@ -1,7 +1,9 @@
+# /usr/bin/env python
 import datetime
 import os
 import traceback
 import re
+import fileinput
 
 actionAudits = []
 totalReplacementCount = 0
@@ -85,12 +87,15 @@ def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclus
                 audit(f'Checking file: {filePath}')
                 # try to read file, skip if not readable
                 try:
-                    fc = getFileContents(filePath)
-                    resp = replaceText(fc, keyWordSubstitutions)
-                    fc = resp[0]
-                    changeCount = resp[1]
-                    if changeCount > 0:
-                        writeFileContent(filePath, fc)
+                    count = 0
+                    global totalReplacementCount
+                    with fileinput.FileInput(filePath, inplace=True, backup='.bak') as f:
+                        for line in f:
+                            rep = replaceText(line, keyWordSubstitutions)
+                            count += rep[1]
+                            print(rep[0], end='')
+                    audit(f'{count} replacements made')
+                    totalReplacementCount += count
                 except Exception as readError:
                     audit(f'Skipping file, unreadable: {filePath}')
                     audit(f'Exception: {formatErrorWithTrace(readError)}')
@@ -98,38 +103,15 @@ def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclus
                 writeAuditsToFile()
 
 
-def writeFileContent(path, content):
-    """
-    Writes the file contents.
-    """
-    with open(path, 'w') as f:
-        audit(f'... writing file content to {path}')
-        f.write(content)
-
-
-def getFileContents(path):
-    """
-    Returns the file contents.
-    """
-    with open(path, 'r') as f:
-        audit(f'... reading {path}')
-        return f.read()
-
-
 def replaceText(text, keyWordSubstitutions):
     """
     Replaces the key words with the substitutes in the text.
     """
     count = 0
-    global totalReplacementCount
     for (keyword, substitute) in keyWordSubstitutions:
-        audit(f'Replacing {keyword} with {substitute}')
-        regex = re.compile("\W" + keyword + "*")
-        (newText, qty) = re.subn(regex, substitute, text)
+        (newText, qty) = re.subn(keyword, substitute, text)
         count += qty
         text = newText
-    audit(f'{count} replacements made')
-    totalReplacementCount += count
     return [text, count]
 
 
@@ -150,13 +132,6 @@ def isSymLink(path):
     return os.path.islink(path)
 
 
-def coupleKeyWordsWithSubstitutes(keyWords, substitutes):
-    """
-    Couples the key words with the substitutes.
-    """
-    return zip(keyWords.split(), substitutes.split())
-
-
 def currentDirectory():
     """
     Returns the current directory.
@@ -171,11 +146,19 @@ def askForDirectoryExclusions():
     directoryExclusions = input("Enter the directory(ies) to exclude: \n")
     return directoryExclusions.split()
 
+
 def formatErrorWithTrace(e):
     """
     Formats the error with the trace.
     """
     return f'{e}\n{traceback.format_exc()}'
+
+def patternsToRegex(patterns):
+    split = patterns.split()
+    """
+    Converts the patterns to regex.
+    """
+    return [re.compile(re.escape(s)) for s in split]
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -187,8 +170,8 @@ if __name__ == '__main__':
         excludeDirectories = excludeDirectories + common_excluded_paths
         audit(f'Excluded directories: {excludeDirectories}')
         keyWords = askForKeyWords()
-        substitutes = askForSubstitutes()
-        keyWordSubstitutions = coupleKeyWordsWithSubstitutes(keyWords, substitutes)
+        substitutes = askForSubstitutes().split()
+        keyWordSubstitutions = zip(patternsToRegex(keyWords), substitutes)
         audit(f'Key words: {keyWords}')
         audit(f'Substitutes: {substitutes}')
         audit(f'Key Word Substitution Tuple: {keyWordSubstitutions}')
