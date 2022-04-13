@@ -82,8 +82,11 @@ def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclus
                 filePath = os.path.join(root, file)
                 audit(f'Checking file: {filePath}')
                 fc = getFileContents(filePath)
-                fc = replaceText(fc, keyWordSubstitutions)
-                writeFileContent(filePath, fc)
+                resp = replaceText(fc, keyWordSubstitutions)
+                fc = resp[0]
+                changeCount = resp[1]
+                if changeCount > 0:
+                    writeFileContent(filePath, fc)
                 writeAuditsToFile()
 
 
@@ -118,7 +121,7 @@ def replaceText(text, keyWordSubstitutions):
         text = newText
     audit(f'{count} replacements made')
     totalReplacementCount += count
-    return text
+    return [text, count]
 
 
 def checkIfPathContainsExcludedWords(path, excludedWords):
