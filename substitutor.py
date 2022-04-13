@@ -13,6 +13,7 @@ common_excluded_files = ['audits.txt', 'substitute.py', 'substitutor.py', 'subst
 startTime = int(round(datetime.datetime.now().timestamp()) * 1000)
 auditFileName = f'Substitor_Audit_{startTime}.txt'
 
+
 def audit(action):
     """
     Audits the actions taken by this script.
