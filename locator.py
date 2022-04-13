@@ -24,7 +24,6 @@ def findFilesContainingSearchWord(baseDir, searchWord):
                 regex = re.compile("\W" + searchWord + "*")
                 found = re.findall(regex, contents)
                 matches = matches + found
-
     return matches
 
 
@@ -40,6 +39,13 @@ def getCurrentDir():
     return os.getcwd()
 
 
+def writeToFile(matches):
+    file = open('results.txt', 'w')
+    for match in matches:
+        file.write(match + '\n')
+    file.close()
+
+
 if __name__ == '__main__':
     baseDir = askForBaseDir()
     if baseDir == "" or baseDir == "." or baseDir == "./":
@@ -48,4 +54,5 @@ if __name__ == '__main__':
     print(baseDir)
     print(searchWord)
     files = findFilesContainingSearchWord(baseDir, searchWord)
+    writeToFile(files)
     print(f'Found {len(files)} files that match the search word "{searchWord}"')
