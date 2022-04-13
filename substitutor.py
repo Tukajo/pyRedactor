@@ -91,9 +91,9 @@ def searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, directoryExclus
                     changeCount = resp[1]
                     if changeCount > 0:
                         writeFileContent(filePath, fc)
-                except Exception as e:
+                except Exception as readError:
                     audit(f'Skipping file, unreadable: {filePath}')
-                    audit(f'Exception: {formatErrorWithTrace(e)}')
+                    audit(f'Exception: {formatErrorWithTrace(readError)}')
                     continue
                 writeAuditsToFile()
 
