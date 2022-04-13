@@ -1,8 +1,10 @@
 import datetime
 import os
 import traceback
+import re
 
 actionAudits = []
+totalReplacementCount = 0
 common_excluded_paths = ['venv', '.idea', 'node_modules', 'bower_components', 'dist', 'build', '__pycache__', 'git',
                          '.git', 'Python']
 common_excluded_files = ['audits.txt', 'substitute.py', 'substitutor.py', 'substitutor.pyc', 'substitutor.pyw',
@@ -12,8 +14,6 @@ common_excluded_files = ['audits.txt', 'substitute.py', 'substitutor.py', 'subst
 
 startTime = int(round(datetime.datetime.now().timestamp()) * 1000)
 auditFileName = f'Substitor_Audit_{startTime}.txt'
-
-
 def audit(action):
     """
     Audits the actions taken by this script.
@@ -92,7 +92,7 @@ def writeFileContent(path, content):
     Writes the file contents.
     """
     with open(path, 'w') as f:
-        audit(f'... writing file content {content} to {path}')
+        audit(f'... writing file content to {path}')
         f.write(content)
 
 
@@ -109,9 +109,15 @@ def replaceText(text, keyWordSubstitutions):
     """
     Replaces the key words with the substitutes in the text.
     """
+    count = 0
+    global totalReplacementCount
     for (keyword, substitute) in keyWordSubstitutions:
         audit(f'Replacing {keyword} with {substitute}')
-        return text.replace(keyword, substitute)
+        (newText, qty) = re.subn(keyword, substitute, text)
+        count += qty
+        text = newText
+    audit(f'{count} replacements made')
+    totalReplacementCount += count
     return text
 
 
@@ -170,6 +176,7 @@ if __name__ == '__main__':
         audit(f'Substitutes: {substitutes}')
         audit(f'Key Word Substitution Tuple: {keyWordSubstitutions}')
         searchAndReplaceInFiles(keyWordSubstitutions, baseDirectory, excludeDirectories)
+        audit(f'Total replacements made: {totalReplacementCount}')
         writeAuditsToFile()
     except Exception as e:
         error = traceback.print_exc(None)
