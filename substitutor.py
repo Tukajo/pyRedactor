@@ -124,7 +124,7 @@ def replaceText(text, keyWordSubstitutions):
     global totalReplacementCount
     for (keyword, substitute) in keyWordSubstitutions:
         audit(f'Replacing {keyword} with {substitute}')
-        regex = re.compile(r'\b' + re.escape(keyword) + r'\b')
+        regex = re.compile("\W" + keyword + "*")
         (newText, qty) = re.subn(regex, substitute, text)
         count += qty
         text = newText
